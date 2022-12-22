@@ -33,21 +33,21 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	
 	"github.com/fsnotify/fsnotify"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
-
-	"github.com/spf13/viper/internal/encoding"
-	"github.com/spf13/viper/internal/encoding/dotenv"
-	"github.com/spf13/viper/internal/encoding/hcl"
-	"github.com/spf13/viper/internal/encoding/ini"
-	"github.com/spf13/viper/internal/encoding/javaproperties"
-	"github.com/spf13/viper/internal/encoding/json"
-	"github.com/spf13/viper/internal/encoding/toml"
-	"github.com/spf13/viper/internal/encoding/yaml"
+	
+	"github.com/gozelle/viper/internal/encoding"
+	"github.com/gozelle/viper/internal/encoding/dotenv"
+	"github.com/gozelle/viper/internal/encoding/hcl"
+	"github.com/gozelle/viper/internal/encoding/ini"
+	"github.com/gozelle/viper/internal/encoding/javaproperties"
+	"github.com/gozelle/viper/internal/encoding/json"
+	"github.com/gozelle/viper/internal/encoding/toml"
+	"github.com/gozelle/viper/internal/encoding/yaml"
 )
 
 // ConfigMarshalError happens when failing to marshal the configuration.
@@ -182,30 +182,30 @@ type Viper struct {
 	// Delimiter that separates a list of keys
 	// used to access a nested value in one go
 	keyDelim string
-
+	
 	// A set of paths to look for the config file in
 	configPaths []string
-
+	
 	// The filesystem to read config from.
 	fs afero.Fs
-
+	
 	// A set of remote providers to search for the configuration
 	remoteProviders []*defaultRemoteProvider
-
+	
 	// Name of file to look for inside the path
 	configName        string
 	configFile        string
 	configType        string
 	configPermissions os.FileMode
 	envPrefix         string
-
+	
 	// Specific commands for ini parsing
 	iniLoadOptions ini.LoadOptions
-
+	
 	automaticEnvApplied bool
 	envKeyReplacer      StringReplacer
 	allowEmptyEnv       bool
-
+	
 	config         map[string]interface{}
 	override       map[string]interface{}
 	defaults       map[string]interface{}
@@ -214,11 +214,11 @@ type Viper struct {
 	env            map[string][]string
 	aliases        map[string]string
 	typeByDefValue bool
-
+	
 	onConfigChange func(fsnotify.Event)
-
+	
 	logger Logger
-
+	
 	// TODO: should probably be protected with a mutex
 	encoderRegistry *encoding.EncoderRegistry
 	decoderRegistry *encoding.DecoderRegistry
@@ -240,9 +240,9 @@ func New() *Viper {
 	v.aliases = make(map[string]string)
 	v.typeByDefValue = false
 	v.logger = jwwLogger{}
-
+	
 	v.resetEncoding()
-
+	
 	return v
 }
 
@@ -284,13 +284,13 @@ func EnvKeyReplacer(r StringReplacer) Option {
 // NewWithOptions creates a new Viper instance.
 func NewWithOptions(opts ...Option) *Viper {
 	v := New()
-
+	
 	for _, opt := range opts {
 		opt.apply(v)
 	}
-
+	
 	v.resetEncoding()
-
+	
 	return v
 }
 
@@ -307,76 +307,76 @@ func Reset() {
 func (v *Viper) resetEncoding() {
 	encoderRegistry := encoding.NewEncoderRegistry()
 	decoderRegistry := encoding.NewDecoderRegistry()
-
+	
 	{
 		codec := yaml.Codec{}
-
+		
 		encoderRegistry.RegisterEncoder("yaml", codec)
 		decoderRegistry.RegisterDecoder("yaml", codec)
-
+		
 		encoderRegistry.RegisterEncoder("yml", codec)
 		decoderRegistry.RegisterDecoder("yml", codec)
 	}
-
+	
 	{
 		codec := json.Codec{}
-
+		
 		encoderRegistry.RegisterEncoder("json", codec)
 		decoderRegistry.RegisterDecoder("json", codec)
 	}
-
+	
 	{
 		codec := toml.Codec{}
-
+		
 		encoderRegistry.RegisterEncoder("toml", codec)
 		decoderRegistry.RegisterDecoder("toml", codec)
 	}
-
+	
 	{
 		codec := hcl.Codec{}
-
+		
 		encoderRegistry.RegisterEncoder("hcl", codec)
 		decoderRegistry.RegisterDecoder("hcl", codec)
-
+		
 		encoderRegistry.RegisterEncoder("tfvars", codec)
 		decoderRegistry.RegisterDecoder("tfvars", codec)
 	}
-
+	
 	{
 		codec := ini.Codec{
 			KeyDelimiter: v.keyDelim,
 			LoadOptions:  v.iniLoadOptions,
 		}
-
+		
 		encoderRegistry.RegisterEncoder("ini", codec)
 		decoderRegistry.RegisterDecoder("ini", codec)
 	}
-
+	
 	{
 		codec := &javaproperties.Codec{
 			KeyDelimiter: v.keyDelim,
 		}
-
+		
 		encoderRegistry.RegisterEncoder("properties", codec)
 		decoderRegistry.RegisterDecoder("properties", codec)
-
+		
 		encoderRegistry.RegisterEncoder("props", codec)
 		decoderRegistry.RegisterDecoder("props", codec)
-
+		
 		encoderRegistry.RegisterEncoder("prop", codec)
 		decoderRegistry.RegisterDecoder("prop", codec)
 	}
-
+	
 	{
 		codec := &dotenv.Codec{}
-
+		
 		encoderRegistry.RegisterEncoder("dotenv", codec)
 		decoderRegistry.RegisterDecoder("dotenv", codec)
-
+		
 		encoderRegistry.RegisterEncoder("env", codec)
 		decoderRegistry.RegisterDecoder("env", codec)
 	}
-
+	
 	v.encoderRegistry = encoderRegistry
 	v.decoderRegistry = decoderRegistry
 }
@@ -444,11 +444,11 @@ func (v *Viper) WatchConfig() {
 			initWG.Done()
 			return
 		}
-
+		
 		configFile := filepath.Clean(filename)
 		configDir, _ := filepath.Split(configFile)
 		realConfigFile, _ := filepath.EvalSymlinks(filename)
-
+		
 		eventsWG := sync.WaitGroup{}
 		eventsWG.Add(1)
 		go func() {
@@ -478,7 +478,7 @@ func (v *Viper) WatchConfig() {
 						eventsWG.Done()
 						return
 					}
-
+				
 				case err, ok := <-watcher.Errors:
 					if ok { // 'Errors' channel is not closed
 						log.Printf("watcher error: %v\n", err)
@@ -520,7 +520,7 @@ func (v *Viper) mergeWithEnvPrefix(in string) string {
 	if v.envPrefix != "" {
 		return strings.ToUpper(v.envPrefix + "_" + in)
 	}
-
+	
 	return strings.ToUpper(in)
 }
 
@@ -544,9 +544,9 @@ func (v *Viper) getEnv(key string) (string, bool) {
 	if v.envKeyReplacer != nil {
 		key = v.envKeyReplacer.Replace(key)
 	}
-
+	
 	val, ok := os.LookupEnv(key)
-
+	
 	return val, ok && (v.allowEmptyEnv || val != "")
 }
 
@@ -561,7 +561,7 @@ func AddConfigPath(in string) { v.AddConfigPath(in) }
 func (v *Viper) AddConfigPath(in string) {
 	if in != "" {
 		absin := absPathify(v.logger, in)
-
+		
 		v.logger.Info("adding path to search paths", "path", absin)
 		if !stringInSlice(absin, v.configPaths) {
 			v.configPaths = append(v.configPaths, absin)
@@ -587,7 +587,7 @@ func (v *Viper) AddRemoteProvider(provider, endpoint, path string) error {
 	}
 	if provider != "" && endpoint != "" {
 		v.logger.Info("adding remote provider", "provider", provider, "endpoint", endpoint)
-
+		
 		rp := &defaultRemoteProvider{
 			endpoint: endpoint,
 			provider: provider,
@@ -620,7 +620,7 @@ func (v *Viper) AddSecureRemoteProvider(provider, endpoint, path, secretkeyring 
 	}
 	if provider != "" && endpoint != "" {
 		v.logger.Info("adding remote provider", "provider", provider, "endpoint", endpoint)
-
+		
 		rp := &defaultRemoteProvider{
 			endpoint:      endpoint,
 			provider:      provider,
@@ -650,14 +650,14 @@ func (v *Viper) searchMap(source map[string]interface{}, path []string) interfac
 	if len(path) == 0 {
 		return source
 	}
-
+	
 	next, ok := source[path[0]]
 	if ok {
 		// Fast path
 		if len(path) == 1 {
 			return next
 		}
-
+		
 		// Nested case
 		switch next.(type) {
 		case map[interface{}]interface{}:
@@ -689,11 +689,11 @@ func (v *Viper) searchIndexableWithPathPrefixes(source interface{}, path []strin
 	if len(path) == 0 {
 		return source
 	}
-
+	
 	// search for path prefixes, starting from the longest one
 	for i := len(path); i > 0; i-- {
 		prefixKey := strings.ToLower(strings.Join(path[0:i], v.keyDelim))
-
+		
 		var val interface{}
 		switch sourceIndexable := source.(type) {
 		case []interface{}:
@@ -705,7 +705,7 @@ func (v *Viper) searchIndexableWithPathPrefixes(source interface{}, path []strin
 			return val
 		}
 	}
-
+	
 	// not found
 	return nil
 }
@@ -725,14 +725,14 @@ func (v *Viper) searchSliceWithPathPrefixes(
 	if err != nil || len(sourceSlice) <= index {
 		return nil
 	}
-
+	
 	next := sourceSlice[index]
-
+	
 	// Fast path
 	if pathIndex == len(path) {
 		return next
 	}
-
+	
 	switch n := next.(type) {
 	case map[interface{}]interface{}:
 		return v.searchIndexableWithPathPrefixes(cast.ToStringMap(n), path[pathIndex:])
@@ -741,7 +741,7 @@ func (v *Viper) searchSliceWithPathPrefixes(
 	default:
 		// got a value but nested key expected, do nothing and look for next prefix
 	}
-
+	
 	// not found
 	return nil
 }
@@ -760,12 +760,12 @@ func (v *Viper) searchMapWithPathPrefixes(
 	if !ok {
 		return nil
 	}
-
+	
 	// Fast path
 	if pathIndex == len(path) {
 		return next
 	}
-
+	
 	// Nested case
 	switch n := next.(type) {
 	case map[interface{}]interface{}:
@@ -775,7 +775,7 @@ func (v *Viper) searchMapWithPathPrefixes(
 	default:
 		// got a value but nested key expected, do nothing and look for next prefix
 	}
-
+	
 	// not found
 	return nil
 }
@@ -820,7 +820,7 @@ func (v *Viper) isPathShadowedInFlatMap(path []string, mi interface{}) string {
 	default:
 		return ""
 	}
-
+	
 	// scan paths
 	var parentKey string
 	for i := 1; i < len(path); i++ {
@@ -888,7 +888,7 @@ func (v *Viper) Get(key string) interface{} {
 	if val == nil {
 		return nil
 	}
-
+	
 	if v.typeByDefValue {
 		// TODO(bep) this branch isn't covered by a single test.
 		valType := val
@@ -897,7 +897,7 @@ func (v *Viper) Get(key string) interface{} {
 		if defVal != nil {
 			valType = defVal
 		}
-
+		
 		switch valType.(type) {
 		case bool:
 			return cast.ToBool(val)
@@ -925,7 +925,7 @@ func (v *Viper) Get(key string) interface{} {
 			return cast.ToIntSlice(val)
 		}
 	}
-
+	
 	return val
 }
 
@@ -939,7 +939,7 @@ func (v *Viper) Sub(key string) *Viper {
 	if data == nil {
 		return nil
 	}
-
+	
 	if reflect.TypeOf(data).Kind() == reflect.Map {
 		subv.config = cast.ToStringMap(data)
 		return subv
@@ -1130,7 +1130,7 @@ func UnmarshalExact(rawVal interface{}, opts ...DecoderConfigOption) error {
 func (v *Viper) UnmarshalExact(rawVal interface{}, opts ...DecoderConfigOption) error {
 	config := defaultDecoderConfig(rawVal, opts...)
 	config.ErrorUnused = true
-
+	
 	return decode(v.AllSettings(), config)
 }
 
@@ -1192,15 +1192,15 @@ func (v *Viper) BindEnv(input ...string) error {
 	if len(input) == 0 {
 		return fmt.Errorf("missing key to bind to")
 	}
-
+	
 	key := strings.ToLower(input[0])
-
+	
 	if len(input) == 1 {
 		v.env[key] = append(v.env[key], v.mergeWithEnvPrefix(key))
 	} else {
 		v.env[key] = append(v.env[key], input[1:]...)
 	}
-
+	
 	return nil
 }
 
@@ -1231,17 +1231,17 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 		path   = strings.Split(lcaseKey, v.keyDelim)
 		nested = len(path) > 1
 	)
-
+	
 	// compute the path through the nested maps to the nested value
 	if nested && v.isPathShadowedInDeepMap(path, castMapStringToMapInterface(v.aliases)) != "" {
 		return nil
 	}
-
+	
 	// if the requested key is an alias, then return the proper key
 	lcaseKey = v.realKey(lcaseKey)
 	path = strings.Split(lcaseKey, v.keyDelim)
 	nested = len(path) > 1
-
+	
 	// Set() override first
 	val = v.searchMap(v.override, path)
 	if val != nil {
@@ -1250,7 +1250,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 	if nested && v.isPathShadowedInDeepMap(path, v.override) != "" {
 		return nil
 	}
-
+	
 	// PFlag override next
 	flag, exists := v.pflags[lcaseKey]
 	if exists && flag.HasChanged() {
@@ -1278,7 +1278,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 	if nested && v.isPathShadowedInFlatMap(path, v.pflags) != "" {
 		return nil
 	}
-
+	
 	// Env override next
 	if v.automaticEnvApplied {
 		// even if it hasn't been registered, if automaticEnv is used,
@@ -1301,7 +1301,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 	if nested && v.isPathShadowedInFlatMap(path, v.env) != "" {
 		return nil
 	}
-
+	
 	// Config file next
 	val = v.searchIndexableWithPathPrefixes(v.config, path)
 	if val != nil {
@@ -1310,7 +1310,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 	if nested && v.isPathShadowedInDeepMap(path, v.config) != "" {
 		return nil
 	}
-
+	
 	// K/V store next
 	val = v.searchMap(v.kvstore, path)
 	if val != nil {
@@ -1319,7 +1319,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 	if nested && v.isPathShadowedInDeepMap(path, v.kvstore) != "" {
 		return nil
 	}
-
+	
 	// Default next
 	val = v.searchMap(v.defaults, path)
 	if val != nil {
@@ -1328,7 +1328,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 	if nested && v.isPathShadowedInDeepMap(path, v.defaults) != "" {
 		return nil
 	}
-
+	
 	if flagDefault {
 		// last chance: if no value is found and a flag does exist for the key,
 		// get the flag's default value even if the flag's value has not been set.
@@ -1356,7 +1356,7 @@ func (v *Viper) find(lcaseKey string, flagDefault bool) interface{} {
 		}
 		// last item, no need to check shadowing
 	}
-
+	
 	return nil
 }
 
@@ -1432,7 +1432,7 @@ func (v *Viper) registerAlias(alias string, key string) {
 	alias = strings.ToLower(alias)
 	if alias != key && alias != v.realKey(key) {
 		_, exists := v.aliases[alias]
-
+		
 		if !exists {
 			// if we alias something that exists in one of the maps to another
 			// name, we'll never be able to get that value using the original
@@ -1464,7 +1464,7 @@ func (v *Viper) realKey(key string) string {
 	newkey, exists := v.aliases[key]
 	if exists {
 		v.logger.Debug("key is an alias", "alias", key, "to", newkey)
-
+		
 		return v.realKey(newkey)
 	}
 	return key
@@ -1475,11 +1475,11 @@ func InConfig(key string) bool { return v.InConfig(key) }
 
 func (v *Viper) InConfig(key string) bool {
 	lcaseKey := strings.ToLower(key)
-
+	
 	// if the requested key is an alias, then return the proper key
 	lcaseKey = v.realKey(lcaseKey)
 	path := strings.Split(lcaseKey, v.keyDelim)
-
+	
 	return v.searchIndexableWithPathPrefixes(v.config, path) != nil
 }
 
@@ -1492,11 +1492,11 @@ func (v *Viper) SetDefault(key string, value interface{}) {
 	// If alias passed in, then set the proper default
 	key = v.realKey(strings.ToLower(key))
 	value = toCaseInsensitiveValue(value)
-
+	
 	path := strings.Split(key, v.keyDelim)
 	lastKey := strings.ToLower(path[len(path)-1])
 	deepestMap := deepSearch(v.defaults, path[0:len(path)-1])
-
+	
 	// set innermost value
 	deepestMap[lastKey] = value
 }
@@ -1511,11 +1511,11 @@ func (v *Viper) Set(key string, value interface{}) {
 	// If alias passed in, then set the proper override
 	key = v.realKey(strings.ToLower(key))
 	value = toCaseInsensitiveValue(value)
-
+	
 	path := strings.Split(key, v.keyDelim)
 	lastKey := strings.ToLower(path[len(path)-1])
 	deepestMap := deepSearch(v.override, path[0:len(path)-1])
-
+	
 	// set innermost value
 	deepestMap[lastKey] = value
 }
@@ -1530,24 +1530,24 @@ func (v *Viper) ReadInConfig() error {
 	if err != nil {
 		return err
 	}
-
+	
 	if !stringInSlice(v.getConfigType(), SupportedExts) {
 		return UnsupportedConfigError(v.getConfigType())
 	}
-
+	
 	v.logger.Debug("reading file", "file", filename)
 	file, err := afero.ReadFile(v.fs, filename)
 	if err != nil {
 		return err
 	}
-
+	
 	config := make(map[string]interface{})
-
+	
 	err = v.unmarshalReader(bytes.NewReader(file), config)
 	if err != nil {
 		return err
 	}
-
+	
 	v.config = config
 	return nil
 }
@@ -1561,16 +1561,16 @@ func (v *Viper) MergeInConfig() error {
 	if err != nil {
 		return err
 	}
-
+	
 	if !stringInSlice(v.getConfigType(), SupportedExts) {
 		return UnsupportedConfigError(v.getConfigType())
 	}
-
+	
 	file, err := afero.ReadFile(v.fs, filename)
 	if err != nil {
 		return err
 	}
-
+	
 	return v.MergeConfig(bytes.NewReader(file))
 }
 
@@ -1648,9 +1648,9 @@ func (v *Viper) SafeWriteConfigAs(filename string) error {
 
 func (v *Viper) writeConfig(filename string, force bool) error {
 	v.logger.Info("attempting to write configuration to file")
-
+	
 	var configType string
-
+	
 	ext := filepath.Ext(filename)
 	if ext != "" && ext != filepath.Base(filename) {
 		configType = ext[1:]
@@ -1660,7 +1660,7 @@ func (v *Viper) writeConfig(filename string, force bool) error {
 	if configType == "" {
 		return fmt.Errorf("config type could not be determined for %s", filename)
 	}
-
+	
 	if !stringInSlice(configType, SupportedExts) {
 		return UnsupportedConfigError(configType)
 	}
@@ -1676,11 +1676,11 @@ func (v *Viper) writeConfig(filename string, force bool) error {
 		return err
 	}
 	defer f.Close()
-
+	
 	if err := v.marshalWriter(f, configType); err != nil {
 		return err
 	}
-
+	
 	return f.Sync()
 }
 
@@ -1693,7 +1693,7 @@ func unmarshalReader(in io.Reader, c map[string]interface{}) error {
 func (v *Viper) unmarshalReader(in io.Reader, c map[string]interface{}) error {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(in)
-
+	
 	switch format := strings.ToLower(v.getConfigType()); format {
 	case "yaml", "yml", "json", "toml", "hcl", "tfvars", "ini", "properties", "props", "prop", "dotenv", "env":
 		err := v.decoderRegistry.Decode(format, buf.Bytes(), c)
@@ -1701,7 +1701,7 @@ func (v *Viper) unmarshalReader(in io.Reader, c map[string]interface{}) error {
 			return ConfigParseError{err}
 		}
 	}
-
+	
 	insensitiviseMap(c)
 	return nil
 }
@@ -1715,7 +1715,7 @@ func (v *Viper) marshalWriter(f afero.File, configType string) error {
 		if err != nil {
 			return ConfigMarshalError{err}
 		}
-
+		
 		_, err = f.WriteString(string(b))
 		if err != nil {
 			return ConfigMarshalError{err}
@@ -1787,7 +1787,7 @@ func mergeMaps(
 			}
 			continue
 		}
-
+		
 		tv, ok := tgt[tk]
 		if !ok {
 			v.logger.Trace("", fmt.Sprintf("ok[%s]", tk), false, fmt.Sprintf("tgt[%s]", sk), sv)
@@ -1797,10 +1797,10 @@ func mergeMaps(
 			}
 			continue
 		}
-
+		
 		svType := reflect.TypeOf(sv)
 		tvType := reflect.TypeOf(tv)
-
+		
 		v.logger.Trace(
 			"processing",
 			"key", sk,
@@ -1809,7 +1809,7 @@ func mergeMaps(
 			"sv", sv,
 			"tv", tv,
 		)
-
+		
 		switch ttv := tv.(type) {
 		case map[interface{}]interface{}:
 			v.logger.Trace("merging maps (must convert)")
@@ -1825,7 +1825,7 @@ func mergeMaps(
 				)
 				continue
 			}
-
+			
 			ssv := castToMapStringInterface(tsv)
 			stv := castToMapStringInterface(ttv)
 			mergeMaps(ssv, stv, ttv)
@@ -1874,23 +1874,23 @@ func (v *Viper) WatchRemoteConfigOnChannel() error {
 // Retrieve the first found remote configuration.
 func (v *Viper) getKeyValueConfig() error {
 	if RemoteConfig == nil {
-		return RemoteConfigError("Enable the remote features by doing a blank import of the viper/remote package: '_ github.com/spf13/viper/remote'")
+		return RemoteConfigError("Enable the remote features by doing a blank import of the viper/remote package: '_ github.com/gozelle/viper/remote'")
 	}
-
+	
 	if len(v.remoteProviders) == 0 {
 		return RemoteConfigError("No Remote Providers")
 	}
-
+	
 	for _, rp := range v.remoteProviders {
 		val, err := v.getRemoteConfig(rp)
 		if err != nil {
 			v.logger.Error(fmt.Errorf("get remote config: %w", err).Error())
-
+			
 			continue
 		}
-
+		
 		v.kvstore = val
-
+		
 		return nil
 	}
 	return RemoteConfigError("No Files Found")
@@ -1910,7 +1910,7 @@ func (v *Viper) watchKeyValueConfigOnChannel() error {
 	if len(v.remoteProviders) == 0 {
 		return RemoteConfigError("No Remote Providers")
 	}
-
+	
 	for _, rp := range v.remoteProviders {
 		respc, _ := RemoteConfig.WatchChannel(rp)
 		// Todo: Add quit channel
@@ -1931,12 +1931,12 @@ func (v *Viper) watchKeyValueConfig() error {
 	if len(v.remoteProviders) == 0 {
 		return RemoteConfigError("No Remote Providers")
 	}
-
+	
 	for _, rp := range v.remoteProviders {
 		val, err := v.watchRemoteConfig(rp)
 		if err != nil {
 			v.logger.Error(fmt.Errorf("watch remote config: %w", err).Error())
-
+			
 			continue
 		}
 		v.kvstore = val
@@ -1968,7 +1968,7 @@ func (v *Viper) AllKeys() []string {
 	m = v.flattenAndMergeMap(m, v.config, "")
 	m = v.flattenAndMergeMap(m, v.kvstore, "")
 	m = v.flattenAndMergeMap(m, v.defaults, "")
-
+	
 	// convert set of paths to list
 	a := make([]string, 0, len(m))
 	for x := range m {
@@ -1992,7 +1992,7 @@ func (v *Viper) flattenAndMergeMap(shadow map[string]bool, m map[string]interfac
 	if shadow == nil {
 		shadow = make(map[string]bool)
 	}
-
+	
 	var m2 map[string]interface{}
 	if prefix != "" {
 		prefix += v.keyDelim
@@ -2105,18 +2105,18 @@ func (v *Viper) getConfigType() string {
 	if v.configType != "" {
 		return v.configType
 	}
-
+	
 	cf, err := v.getConfigFile()
 	if err != nil {
 		return ""
 	}
-
+	
 	ext := filepath.Ext(cf)
-
+	
 	if len(ext) > 1 {
 		return ext[1:]
 	}
-
+	
 	return ""
 }
 

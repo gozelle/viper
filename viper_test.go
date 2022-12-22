@@ -21,7 +21,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-
+	
 	"github.com/fsnotify/fsnotify"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
@@ -29,8 +29,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/spf13/viper/internal/testutil"
+	
+	"github.com/gozelle/viper/internal/testutil"
 )
 
 // var yamlExample = []byte(`Hacker: true
@@ -143,31 +143,31 @@ func initConfigs() {
 	SetConfigType("yaml")
 	r = bytes.NewReader(yamlExample)
 	unmarshalReader(r, v.config)
-
+	
 	SetConfigType("json")
 	r = bytes.NewReader(jsonExample)
 	unmarshalReader(r, v.config)
-
+	
 	SetConfigType("hcl")
 	r = bytes.NewReader(hclExample)
 	unmarshalReader(r, v.config)
-
+	
 	SetConfigType("properties")
 	r = bytes.NewReader(propertiesExample)
 	unmarshalReader(r, v.config)
-
+	
 	SetConfigType("toml")
 	r = bytes.NewReader(tomlExample)
 	unmarshalReader(r, v.config)
-
+	
 	SetConfigType("env")
 	r = bytes.NewReader(dotenvExample)
 	unmarshalReader(r, v.config)
-
+	
 	SetConfigType("json")
 	remote := bytes.NewReader(remoteExample)
 	unmarshalReader(remote, v.kvstore)
-
+	
 	SetConfigType("ini")
 	r = bytes.NewReader(iniExample)
 	unmarshalReader(r, v.config)
@@ -177,7 +177,7 @@ func initConfig(typ, config string) {
 	Reset()
 	SetConfigType(typ)
 	r := strings.NewReader(config)
-
+	
 	if err := unmarshalReader(r, v.config); err != nil {
 		panic(err)
 	}
@@ -191,7 +191,7 @@ func initJSON() {
 	Reset()
 	SetConfigType("json")
 	r := bytes.NewReader(jsonExample)
-
+	
 	unmarshalReader(r, v.config)
 }
 
@@ -199,7 +199,7 @@ func initProperties() {
 	Reset()
 	SetConfigType("properties")
 	r := bytes.NewReader(propertiesExample)
-
+	
 	unmarshalReader(r, v.config)
 }
 
@@ -207,7 +207,7 @@ func initTOML() {
 	Reset()
 	SetConfigType("toml")
 	r := bytes.NewReader(tomlExample)
-
+	
 	unmarshalReader(r, v.config)
 }
 
@@ -215,7 +215,7 @@ func initDotEnv() {
 	Reset()
 	SetConfigType("env")
 	r := bytes.NewReader(dotenvExample)
-
+	
 	unmarshalReader(r, v.config)
 }
 
@@ -223,7 +223,7 @@ func initHcl() {
 	Reset()
 	SetConfigType("hcl")
 	r := bytes.NewReader(hclExample)
-
+	
 	unmarshalReader(r, v.config)
 }
 
@@ -231,7 +231,7 @@ func initIni() {
 	Reset()
 	SetConfigType("ini")
 	r := bytes.NewReader(iniExample)
-
+	
 	unmarshalReader(r, v.config)
 }
 
@@ -241,14 +241,14 @@ func initDirs(t *testing.T) (string, string, func()) {
 		testDirs = []string{`a a`, `b`, `C_`}
 		config   = `improbable`
 	)
-
+	
 	if runtime.GOOS != "windows" {
 		testDirs = append(testDirs, `d\d`)
 	}
-
+	
 	root, err := ioutil.TempDir("", "")
 	require.NoError(t, err, "Failed to create temporary directory")
-
+	
 	cleanup := true
 	defer func() {
 		if cleanup {
@@ -256,23 +256,23 @@ func initDirs(t *testing.T) (string, string, func()) {
 			os.RemoveAll(root)
 		}
 	}()
-
+	
 	assert.Nil(t, err)
-
+	
 	err = os.Chdir(root)
 	require.Nil(t, err)
-
+	
 	for _, dir := range testDirs {
 		err = os.Mkdir(dir, 0o750)
 		assert.Nil(t, err)
-
+		
 		err = ioutil.WriteFile(
 			path.Join(dir, config+".toml"),
 			[]byte("key = \"value is "+dir+"\"\n"),
 			0o640)
 		assert.Nil(t, err)
 	}
-
+	
 	cleanup = false
 	return root, config, func() {
 		os.Chdir("..")
@@ -304,132 +304,132 @@ func (s *stringValue) String() string {
 func TestGetConfigFile(t *testing.T) {
 	t.Run("config file set", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/etc/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/etc/viper/config.yaml"))
 		require.NoError(t, err)
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/etc/viper")
 		v.SetConfigFile(testutil.AbsFilePath(t, "/etc/viper/config.yaml"))
-
+		
 		filename, err := v.getConfigFile()
 		assert.Equal(t, testutil.AbsFilePath(t, "/etc/viper/config.yaml"), filename)
 		assert.NoError(t, err)
 	})
-
+	
 	t.Run("find file", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/etc/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/etc/viper/config.yaml"))
 		require.NoError(t, err)
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/etc/viper")
-
+		
 		filename, err := v.getConfigFile()
 		assert.Equal(t, testutil.AbsFilePath(t, "/etc/viper/config.yaml"), filename)
 		assert.NoError(t, err)
 	})
-
+	
 	t.Run("find files only", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/etc/config"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/etc/config/config.yaml"))
 		require.NoError(t, err)
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/etc")
 		v.AddConfigPath("/etc/config")
-
+		
 		filename, err := v.getConfigFile()
 		assert.Equal(t, testutil.AbsFilePath(t, "/etc/config/config.yaml"), filename)
 		assert.NoError(t, err)
 	})
-
+	
 	t.Run("precedence", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/home/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/home/viper/config.zml"))
 		require.NoError(t, err)
-
+		
 		err = fs.Mkdir(testutil.AbsFilePath(t, "/etc/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/etc/viper/config.bml"))
 		require.NoError(t, err)
-
+		
 		err = fs.Mkdir(testutil.AbsFilePath(t, "/var/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/var/viper/config.yaml"))
 		require.NoError(t, err)
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/home/viper")
 		v.AddConfigPath("/etc/viper")
 		v.AddConfigPath("/var/viper")
-
+		
 		filename, err := v.getConfigFile()
 		assert.Equal(t, testutil.AbsFilePath(t, "/var/viper/config.yaml"), filename)
 		assert.NoError(t, err)
 	})
-
+	
 	t.Run("without extension", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/etc/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/etc/viper/.dotfilenoext"))
 		require.NoError(t, err)
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/etc/viper")
 		v.SetConfigName(".dotfilenoext")
 		v.SetConfigType("yaml")
-
+		
 		filename, err := v.getConfigFile()
 		assert.Equal(t, testutil.AbsFilePath(t, "/etc/viper/.dotfilenoext"), filename)
 		assert.NoError(t, err)
 	})
-
+	
 	t.Run("without extension and config type", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/etc/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		_, err = fs.Create(testutil.AbsFilePath(t, "/etc/viper/.dotfilenoext"))
 		require.NoError(t, err)
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/etc/viper")
 		v.SetConfigName(".dotfilenoext")
-
+		
 		_, err = v.getConfigFile()
 		// unless config type is set, files without extension
 		// are not considered
@@ -440,51 +440,51 @@ func TestGetConfigFile(t *testing.T) {
 func TestReadInConfig(t *testing.T) {
 	t.Run("config file set", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir("/etc/viper", 0o777)
 		require.NoError(t, err)
-
+		
 		file, err := fs.Create(testutil.AbsFilePath(t, "/etc/viper/config.yaml"))
 		require.NoError(t, err)
-
+		
 		_, err = file.Write([]byte(`key: value`))
 		require.NoError(t, err)
-
+		
 		file.Close()
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.SetConfigFile(testutil.AbsFilePath(t, "/etc/viper/config.yaml"))
-
+		
 		err = v.ReadInConfig()
 		require.NoError(t, err)
-
+		
 		assert.Equal(t, "value", v.Get("key"))
 	})
-
+	
 	t.Run("find file", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-
+		
 		err := fs.Mkdir(testutil.AbsFilePath(t, "/etc/viper"), 0o777)
 		require.NoError(t, err)
-
+		
 		file, err := fs.Create(testutil.AbsFilePath(t, "/etc/viper/config.yaml"))
 		require.NoError(t, err)
-
+		
 		_, err = file.Write([]byte(`key: value`))
 		require.NoError(t, err)
-
+		
 		file.Close()
-
+		
 		v := New()
-
+		
 		v.SetFs(fs)
 		v.AddConfigPath("/etc/viper")
-
+		
 		err = v.ReadInConfig()
 		require.NoError(t, err)
-
+		
 		assert.Equal(t, "value", v.Get("key"))
 	})
 }
@@ -492,13 +492,13 @@ func TestReadInConfig(t *testing.T) {
 func TestDefault(t *testing.T) {
 	SetDefault("age", 45)
 	assert.Equal(t, 45, Get("age"))
-
+	
 	SetDefault("clothing.jacket", "slacks")
 	assert.Equal(t, "slacks", Get("clothing.jacket"))
-
+	
 	SetConfigType("yaml")
 	err := ReadConfig(bytes.NewBuffer(yamlExample))
-
+	
 	assert.NoError(t, err)
 	assert.Equal(t, "leather", Get("clothing.jacket"))
 }
@@ -506,7 +506,7 @@ func TestDefault(t *testing.T) {
 func TestUnmarshaling(t *testing.T) {
 	SetConfigType("yaml")
 	r := bytes.NewReader(yamlExample)
-
+	
 	unmarshalReader(r, v.config)
 	assert.True(t, InConfig("name"))
 	assert.True(t, InConfig("clothing.jacket"))
@@ -600,7 +600,7 @@ func TestIni(t *testing.T) {
 
 func TestRemotePrecedence(t *testing.T) {
 	initJSON()
-
+	
 	remote := bytes.NewReader(remoteExample)
 	assert.Equal(t, "0001", Get("id"))
 	unmarshalReader(remote, v.kvstore)
@@ -615,127 +615,127 @@ func TestRemotePrecedence(t *testing.T) {
 
 func TestEnv(t *testing.T) {
 	initJSON()
-
+	
 	BindEnv("id")
 	BindEnv("f", "FOOD", "OLD_FOOD")
-
+	
 	testutil.Setenv(t, "ID", "13")
 	testutil.Setenv(t, "FOOD", "apple")
 	testutil.Setenv(t, "OLD_FOOD", "banana")
 	testutil.Setenv(t, "NAME", "crunk")
-
+	
 	assert.Equal(t, "13", Get("id"))
 	assert.Equal(t, "apple", Get("f"))
 	assert.Equal(t, "Cake", Get("name"))
-
+	
 	AutomaticEnv()
-
+	
 	assert.Equal(t, "crunk", Get("name"))
 }
 
 func TestMultipleEnv(t *testing.T) {
 	initJSON()
-
+	
 	BindEnv("f", "FOOD", "OLD_FOOD")
-
+	
 	testutil.Setenv(t, "OLD_FOOD", "banana")
-
+	
 	assert.Equal(t, "banana", Get("f"))
 }
 
 func TestEmptyEnv(t *testing.T) {
 	initJSON()
-
+	
 	BindEnv("type") // Empty environment variable
 	BindEnv("name") // Bound, but not set environment variable
-
+	
 	testutil.Setenv(t, "TYPE", "")
-
+	
 	assert.Equal(t, "donut", Get("type"))
 	assert.Equal(t, "Cake", Get("name"))
 }
 
 func TestEmptyEnv_Allowed(t *testing.T) {
 	initJSON()
-
+	
 	AllowEmptyEnv(true)
-
+	
 	BindEnv("type") // Empty environment variable
 	BindEnv("name") // Bound, but not set environment variable
-
+	
 	testutil.Setenv(t, "TYPE", "")
-
+	
 	assert.Equal(t, "", Get("type"))
 	assert.Equal(t, "Cake", Get("name"))
 }
 
 func TestEnvPrefix(t *testing.T) {
 	initJSON()
-
+	
 	SetEnvPrefix("foo") // will be uppercased automatically
 	BindEnv("id")
 	BindEnv("f", "FOOD") // not using prefix
-
+	
 	testutil.Setenv(t, "FOO_ID", "13")
 	testutil.Setenv(t, "FOOD", "apple")
 	testutil.Setenv(t, "FOO_NAME", "crunk")
-
+	
 	assert.Equal(t, "13", Get("id"))
 	assert.Equal(t, "apple", Get("f"))
 	assert.Equal(t, "Cake", Get("name"))
-
+	
 	AutomaticEnv()
-
+	
 	assert.Equal(t, "crunk", Get("name"))
 }
 
 func TestAutoEnv(t *testing.T) {
 	Reset()
-
+	
 	AutomaticEnv()
-
+	
 	testutil.Setenv(t, "FOO_BAR", "13")
-
+	
 	assert.Equal(t, "13", Get("foo_bar"))
 }
 
 func TestAutoEnvWithPrefix(t *testing.T) {
 	Reset()
-
+	
 	AutomaticEnv()
 	SetEnvPrefix("Baz")
-
+	
 	testutil.Setenv(t, "BAZ_BAR", "13")
-
+	
 	assert.Equal(t, "13", Get("bar"))
 }
 
 func TestSetEnvKeyReplacer(t *testing.T) {
 	Reset()
-
+	
 	AutomaticEnv()
-
+	
 	testutil.Setenv(t, "REFRESH_INTERVAL", "30s")
-
+	
 	replacer := strings.NewReplacer("-", "_")
 	SetEnvKeyReplacer(replacer)
-
+	
 	assert.Equal(t, "30s", Get("refresh-interval"))
 }
 
 func TestEnvKeyReplacer(t *testing.T) {
 	v := NewWithOptions(EnvKeyReplacer(strings.NewReplacer("-", "_")))
-
+	
 	v.AutomaticEnv()
-
+	
 	testutil.Setenv(t, "REFRESH_INTERVAL", "30s")
-
+	
 	assert.Equal(t, "30s", v.Get("refresh-interval"))
 }
 
 func TestAllKeys(t *testing.T) {
 	initConfigs()
-
+	
 	ks := sort.StringSlice{
 		"title",
 		"author.bio",
@@ -839,26 +839,26 @@ func TestAllKeys(t *testing.T) {
 		"type_dotenv":  "donut",
 		"name_dotenv":  "Cake",
 	}
-
+	
 	allkeys := sort.StringSlice(AllKeys())
 	allkeys.Sort()
 	ks.Sort()
-
+	
 	assert.Equal(t, ks, allkeys)
 	assert.Equal(t, all, AllSettings())
 }
 
 func TestAllKeysWithEnv(t *testing.T) {
 	v := New()
-
+	
 	// bind and define environment variables (including a nested one)
 	v.BindEnv("id")
 	v.BindEnv("foo.bar")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
+	
 	testutil.Setenv(t, "ID", "13")
 	testutil.Setenv(t, "FOO_BAR", "baz")
-
+	
 	expectedKeys := sort.StringSlice{"id", "foo.bar"}
 	expectedKeys.Sort()
 	keys := sort.StringSlice(v.AllKeys())
@@ -883,21 +883,21 @@ func TestUnmarshal(t *testing.T) {
 	Set("name", "Steve")
 	Set("duration", "1s1ms")
 	Set("modes", []int{1, 2, 3})
-
+	
 	type config struct {
 		Port     int
 		Name     string
 		Duration time.Duration
 		Modes    []int
 	}
-
+	
 	var C config
-
+	
 	err := Unmarshal(&C)
 	if err != nil {
 		t.Fatalf("unable to decode into struct, %v", err)
 	}
-
+	
 	assert.Equal(
 		t,
 		&config{
@@ -908,13 +908,13 @@ func TestUnmarshal(t *testing.T) {
 		},
 		&C,
 	)
-
+	
 	Set("port", 1234)
 	err = Unmarshal(&C)
 	if err != nil {
 		t.Fatalf("unable to decode into struct, %v", err)
 	}
-
+	
 	assert.Equal(
 		t,
 		&config{
@@ -929,7 +929,7 @@ func TestUnmarshal(t *testing.T) {
 
 func TestUnmarshalWithDecoderOptions(t *testing.T) {
 	Set("credentials", "{\"foo\":\"bar\"}")
-
+	
 	opt := DecodeHook(mapstructure.ComposeDecodeHookFunc(
 		mapstructure.StringToTimeDurationHookFunc(),
 		mapstructure.StringToSliceHookFunc(","),
@@ -946,18 +946,18 @@ func TestUnmarshalWithDecoderOptions(t *testing.T) {
 			return m, json.Unmarshal([]byte(raw), &m)
 		},
 	))
-
+	
 	type config struct {
 		Credentials map[string]string
 	}
-
+	
 	var C config
-
+	
 	err := Unmarshal(&C, opt)
 	if err != nil {
 		t.Fatalf("unable to decode into struct, %v", err)
 	}
-
+	
 	assert.Equal(t, &config{
 		Credentials: map[string]string{"foo": "bar"},
 	}, &C)
@@ -966,33 +966,33 @@ func TestUnmarshalWithDecoderOptions(t *testing.T) {
 func TestBindPFlags(t *testing.T) {
 	v := New() // create independent Viper object
 	flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
-
+	
 	testValues := map[string]*string{
 		"host":     nil,
 		"port":     nil,
 		"endpoint": nil,
 	}
-
+	
 	mutatedTestValues := map[string]string{
 		"host":     "localhost",
 		"port":     "6060",
 		"endpoint": "/public",
 	}
-
+	
 	for name := range testValues {
 		testValues[name] = flagSet.String(name, "", "test")
 	}
-
+	
 	err := v.BindPFlags(flagSet)
 	if err != nil {
 		t.Fatalf("error binding flag set, %v", err)
 	}
-
+	
 	flagSet.VisitAll(func(flag *pflag.Flag) {
 		flag.Value.Set(mutatedTestValues[flag.Name])
 		flag.Changed = true
 	})
-
+	
 	for name, expected := range mutatedTestValues {
 		assert.Equal(t, expected, v.Get(name))
 	}
@@ -1009,26 +1009,26 @@ func TestBindPFlagsStringSlice(t *testing.T) {
 		{[]string{"dwa", "trzy"}, "dwa,trzy"},
 		{[]string{"cztery", "piec , szesc"}, "cztery,\"piec , szesc\""},
 	}
-
+	
 	v := New() // create independent Viper object
 	defaultVal := []string{"default"}
 	v.SetDefault("stringslice", defaultVal)
-
+	
 	for _, testValue := range tests {
 		flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
 		flagSet.StringSlice("stringslice", testValue.Expected, "test")
-
+		
 		for _, changed := range []bool{true, false} {
 			flagSet.VisitAll(func(f *pflag.Flag) {
 				f.Value.Set(testValue.Value)
 				f.Changed = changed
 			})
-
+			
 			err := v.BindPFlags(flagSet)
 			if err != nil {
 				t.Fatalf("error binding flag set, %v", err)
 			}
-
+			
 			type TestStr struct {
 				StringSlice []string
 			}
@@ -1057,26 +1057,26 @@ func TestBindPFlagsStringArray(t *testing.T) {
 		{[]string{"dwa,trzy"}, "dwa,trzy"},
 		{[]string{"cztery,\"piec , szesc\""}, "cztery,\"piec , szesc\""},
 	}
-
+	
 	v := New() // create independent Viper object
 	defaultVal := []string{"default"}
 	v.SetDefault("stringarray", defaultVal)
-
+	
 	for _, testValue := range tests {
 		flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
 		flagSet.StringArray("stringarray", testValue.Expected, "test")
-
+		
 		for _, changed := range []bool{true, false} {
 			flagSet.VisitAll(func(f *pflag.Flag) {
 				f.Value.Set(testValue.Value)
 				f.Changed = changed
 			})
-
+			
 			err := v.BindPFlags(flagSet)
 			if err != nil {
 				t.Fatalf("error binding flag set, %v", err)
 			}
-
+			
 			type TestStr struct {
 				StringArray []string
 			}
@@ -1104,26 +1104,26 @@ func TestBindPFlagsIntSlice(t *testing.T) {
 		{[]int{1}, "1"},
 		{[]int{2, 3}, "2,3"},
 	}
-
+	
 	v := New() // create independent Viper object
 	defaultVal := []int{0}
 	v.SetDefault("intslice", defaultVal)
-
+	
 	for _, testValue := range tests {
 		flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
 		flagSet.IntSlice("intslice", testValue.Expected, "test")
-
+		
 		for _, changed := range []bool{true, false} {
 			flagSet.VisitAll(func(f *pflag.Flag) {
 				f.Value.Set(testValue.Value)
 				f.Changed = changed
 			})
-
+			
 			err := v.BindPFlags(flagSet)
 			if err != nil {
 				t.Fatalf("error binding flag set, %v", err)
 			}
-
+			
 			type TestInt struct {
 				IntSlice []int
 			}
@@ -1144,20 +1144,20 @@ func TestBindPFlagsIntSlice(t *testing.T) {
 func TestBindPFlag(t *testing.T) {
 	testString := "testing"
 	testValue := newStringValue(testString, &testString)
-
+	
 	flag := &pflag.Flag{
 		Name:    "testflag",
 		Value:   testValue,
 		Changed: false,
 	}
-
+	
 	BindPFlag("testvalue", flag)
-
+	
 	assert.Equal(t, testString, Get("testvalue"))
-
+	
 	flag.Value.Set("testing_mutate")
 	flag.Changed = true // hack for pflag usage
-
+	
 	assert.Equal(t, "testing_mutate", Get("testvalue"))
 }
 
@@ -1177,26 +1177,26 @@ func TestBindPFlagStringToString(t *testing.T) {
 		{map[string]string{"yo": ""}, "yo="},
 		{map[string]string{"yo": "", "oh": "hi=there"}, "yo=,oh=hi=there"},
 	}
-
+	
 	v := New() // create independent Viper object
 	defaultVal := map[string]string{}
 	v.SetDefault("stringtostring", defaultVal)
-
+	
 	for _, testValue := range tests {
 		flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
 		flagSet.StringToString("stringtostring", testValue.Expected, "test")
-
+		
 		for _, changed := range []bool{true, false} {
 			flagSet.VisitAll(func(f *pflag.Flag) {
 				f.Value.Set(testValue.Value)
 				f.Changed = changed
 			})
-
+			
 			err := v.BindPFlags(flagSet)
 			if err != nil {
 				t.Fatalf("error binding flag set, %v", err)
 			}
-
+			
 			type TestMap struct {
 				StringToString map[string]string
 			}
@@ -1215,22 +1215,22 @@ func TestBindPFlagStringToString(t *testing.T) {
 
 func TestBoundCaseSensitivity(t *testing.T) {
 	assert.Equal(t, "brown", Get("eyes"))
-
+	
 	BindEnv("eYEs", "TURTLE_EYES")
-
+	
 	testutil.Setenv(t, "TURTLE_EYES", "blue")
-
+	
 	assert.Equal(t, "blue", Get("eyes"))
-
+	
 	testString := "green"
 	testValue := newStringValue(testString, &testString)
-
+	
 	flag := &pflag.Flag{
 		Name:    "eyeballs",
 		Value:   testValue,
 		Changed: true,
 	}
-
+	
 	BindPFlag("eYEs", flag)
 	assert.Equal(t, "green", Get("eyes"))
 }
@@ -1246,7 +1246,7 @@ func TestSizeInBytes(t *testing.T) {
 		"10mb":           10 * (1 << 20),
 		"1gb":            1 << 30,
 	}
-
+	
 	for str, expected := range input {
 		assert.Equal(t, expected, parseSizeInBytes(str), str)
 	}
@@ -1255,13 +1255,13 @@ func TestSizeInBytes(t *testing.T) {
 func TestFindsNestedKeys(t *testing.T) {
 	initConfigs()
 	dob, _ := time.Parse(time.RFC3339, "1979-05-27T07:32:00Z")
-
+	
 	Set("super", map[string]interface{}{
 		"deep": map[string]interface{}{
 			"nested": "value",
 		},
 	})
-
+	
 	expected := map[string]interface{}{
 		"super": map[string]interface{}{
 			"deep": map[string]interface{}{
@@ -1355,7 +1355,7 @@ func TestFindsNestedKeys(t *testing.T) {
 			},
 		},
 	}
-
+	
 	for key, expectedValue := range expected {
 		assert.Equal(t, expectedValue, v.Get(key))
 	}
@@ -1366,7 +1366,7 @@ func TestReadBufConfig(t *testing.T) {
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(yamlExample))
 	t.Log(v.AllKeys())
-
+	
 	assert.True(t, v.InConfig("name"))
 	assert.True(t, v.InConfig("clothing.jacket"))
 	assert.False(t, v.InConfig("state"))
@@ -1380,36 +1380,36 @@ func TestReadBufConfig(t *testing.T) {
 func TestIsSet(t *testing.T) {
 	v := New()
 	v.SetConfigType("yaml")
-
+	
 	/* config and defaults */
 	v.ReadConfig(bytes.NewBuffer(yamlExample))
 	v.SetDefault("clothing.shoes", "sneakers")
-
+	
 	assert.True(t, v.IsSet("clothing"))
 	assert.True(t, v.IsSet("clothing.jacket"))
 	assert.False(t, v.IsSet("clothing.jackets"))
 	assert.True(t, v.IsSet("clothing.shoes"))
-
+	
 	/* state change */
 	assert.False(t, v.IsSet("helloworld"))
 	v.Set("helloworld", "fubar")
 	assert.True(t, v.IsSet("helloworld"))
-
+	
 	/* env */
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.BindEnv("eyes")
 	v.BindEnv("foo")
 	v.BindEnv("clothing.hat")
 	v.BindEnv("clothing.hats")
-
+	
 	testutil.Setenv(t, "FOO", "bar")
 	testutil.Setenv(t, "CLOTHING_HAT", "bowler")
-
+	
 	assert.True(t, v.IsSet("eyes"))           // in the config file
 	assert.True(t, v.IsSet("foo"))            // in the environment
 	assert.True(t, v.IsSet("clothing.hat"))   // in the environment
 	assert.False(t, v.IsSet("clothing.hats")) // not defined
-
+	
 	/* flags */
 	flagset := pflag.NewFlagSet("testisset", pflag.ContinueOnError)
 	flagset.Bool("foobaz", false, "foobaz")
@@ -1419,7 +1419,7 @@ func TestIsSet(t *testing.T) {
 	v.BindPFlag("barbaz", barbaz)
 	barbaz.Value.Set("true")
 	barbaz.Changed = true // hack for pflag usage
-
+	
 	assert.False(t, v.IsSet("foobaz"))
 	assert.True(t, v.IsSet("barbaz"))
 }
@@ -1427,11 +1427,11 @@ func TestIsSet(t *testing.T) {
 func TestDirsSearch(t *testing.T) {
 	root, config, cleanup := initDirs(t)
 	defer cleanup()
-
+	
 	v := New()
 	v.SetConfigName(config)
 	v.SetDefault(`key`, `default`)
-
+	
 	entries, err := ioutil.ReadDir(root)
 	assert.Nil(t, err)
 	for _, e := range entries {
@@ -1439,27 +1439,27 @@ func TestDirsSearch(t *testing.T) {
 			v.AddConfigPath(e.Name())
 		}
 	}
-
+	
 	err = v.ReadInConfig()
 	assert.Nil(t, err)
-
+	
 	assert.Equal(t, `value is `+filepath.Base(v.configPaths[0]), v.GetString(`key`))
 }
 
 func TestWrongDirsSearchNotFound(t *testing.T) {
 	_, config, cleanup := initDirs(t)
 	defer cleanup()
-
+	
 	v := New()
 	v.SetConfigName(config)
 	v.SetDefault(`key`, `default`)
-
+	
 	v.AddConfigPath(`whattayoutalkingbout`)
 	v.AddConfigPath(`thispathaintthere`)
-
+	
 	err := v.ReadInConfig()
 	assert.Equal(t, reflect.TypeOf(ConfigFileNotFoundError{"", ""}), reflect.TypeOf(err))
-
+	
 	// Even though config did not load and the error might have
 	// been ignored by the client, the default still loads
 	assert.Equal(t, `default`, v.GetString(`key`))
@@ -1468,17 +1468,17 @@ func TestWrongDirsSearchNotFound(t *testing.T) {
 func TestWrongDirsSearchNotFoundForMerge(t *testing.T) {
 	_, config, cleanup := initDirs(t)
 	defer cleanup()
-
+	
 	v := New()
 	v.SetConfigName(config)
 	v.SetDefault(`key`, `default`)
-
+	
 	v.AddConfigPath(`whattayoutalkingbout`)
 	v.AddConfigPath(`thispathaintthere`)
-
+	
 	err := v.MergeInConfig()
 	assert.Equal(t, reflect.TypeOf(ConfigFileNotFoundError{"", ""}), reflect.TypeOf(err))
-
+	
 	// Even though config did not load and the error might have
 	// been ignored by the client, the default still loads
 	assert.Equal(t, `default`, v.GetString(`key`))
@@ -1488,16 +1488,16 @@ func TestSub(t *testing.T) {
 	v := New()
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(yamlExample))
-
+	
 	subv := v.Sub("clothing")
 	assert.Equal(t, v.Get("clothing.pants.size"), subv.Get("pants.size"))
-
+	
 	subv = v.Sub("clothing.pants")
 	assert.Equal(t, v.Get("clothing.pants.size"), subv.Get("size"))
-
+	
 	subv = v.Sub("clothing.pants.size")
 	assert.Equal(t, (*Viper)(nil), subv)
-
+	
 	subv = v.Sub("missing.key")
 	assert.Equal(t, (*Viper)(nil), subv)
 }
@@ -1679,7 +1679,7 @@ func TestWriteConfig(t *testing.T) {
 			v.SetFs(fs)
 			v.SetConfigName(tc.fileName)
 			v.SetConfigType(tc.inConfigType)
-
+			
 			err := v.ReadConfig(bytes.NewBuffer(tc.input))
 			if err != nil {
 				t.Fatal(err)
@@ -1699,7 +1699,7 @@ func TestWriteConfig(t *testing.T) {
 
 func TestWriteConfigTOML(t *testing.T) {
 	fs := afero.NewMemMapFs()
-
+	
 	testCases := map[string]struct {
 		configName string
 		configType string
@@ -1732,7 +1732,7 @@ func TestWriteConfigTOML(t *testing.T) {
 			if err := v.WriteConfigAs(tc.fileName); err != nil {
 				t.Fatal(err)
 			}
-
+			
 			// The TOML String method does not order the contents.
 			// Therefore, we must read the generated file and compare the data.
 			v2 := New()
@@ -1744,7 +1744,7 @@ func TestWriteConfigTOML(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			
 			assert.Equal(t, v.GetString("title"), v2.GetString("title"))
 			assert.Equal(t, v.GetString("owner.bio"), v2.GetString("owner.bio"))
 			assert.Equal(t, v.GetString("owner.dob"), v2.GetString("owner.dob"))
@@ -1787,7 +1787,7 @@ func TestWriteConfigDotEnv(t *testing.T) {
 			if err := v.WriteConfigAs(tc.fileName); err != nil {
 				t.Fatal(err)
 			}
-
+			
 			// The TOML String method does not order the contents.
 			// Therefore, we must read the generated file and compare the data.
 			v2 := New()
@@ -1799,7 +1799,7 @@ func TestWriteConfigDotEnv(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			
 			assert.Equal(t, v.GetString("title_dotenv"), v2.GetString("title_dotenv"))
 			assert.Equal(t, v.GetString("type_dotenv"), v2.GetString("type_dotenv"))
 			assert.Equal(t, v.GetString("kind_dotenv"), v2.GetString("kind_dotenv"))
@@ -1874,14 +1874,14 @@ func TestWriteHiddenFile(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	fs.Create(testutil.AbsFilePath(t, "/test/.config"))
 	v.SetFs(fs)
-
+	
 	v.SetConfigName(".config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath("/test")
-
+	
 	err := v.ReadInConfig()
 	require.NoError(t, err)
-
+	
 	err = v.WriteConfig()
 	require.NoError(t, err)
 }
@@ -1936,71 +1936,71 @@ func TestMergeConfig(t *testing.T) {
 	if err := v.ReadConfig(bytes.NewBuffer(yamlMergeExampleTgt)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if pop := v.GetInt("hello.pop"); pop != 37890 {
 		t.Fatalf("pop != 37890, = %d", pop)
 	}
-
+	
 	if pop := v.GetInt32("hello.pop"); pop != int32(37890) {
 		t.Fatalf("pop != 37890, = %d", pop)
 	}
-
+	
 	if pop := v.GetInt64("hello.largenum"); pop != int64(765432101234567) {
 		t.Fatalf("int64 largenum != 765432101234567, = %d", pop)
 	}
-
+	
 	if pop := v.GetUint("hello.pop"); pop != 37890 {
 		t.Fatalf("uint pop != 37890, = %d", pop)
 	}
-
+	
 	if pop := v.GetUint16("hello.pop"); pop != uint16(37890) {
 		t.Fatalf("uint pop != 37890, = %d", pop)
 	}
-
+	
 	if pop := v.GetUint32("hello.pop"); pop != 37890 {
 		t.Fatalf("uint32 pop != 37890, = %d", pop)
 	}
-
+	
 	if pop := v.GetUint64("hello.num2pow63"); pop != 9223372036854775808 {
 		t.Fatalf("uint64 num2pow63 != 9223372036854775808, = %d", pop)
 	}
-
+	
 	if world := v.GetStringSlice("hello.world"); len(world) != 4 {
 		t.Fatalf("len(world) != 4, = %d", len(world))
 	}
-
+	
 	if fu := v.GetString("fu"); fu != "" {
 		t.Fatalf("fu != \"\", = %s", fu)
 	}
-
+	
 	if err := v.MergeConfig(bytes.NewBuffer(yamlMergeExampleSrc)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if pop := v.GetInt("hello.pop"); pop != 45000 {
 		t.Fatalf("pop != 45000, = %d", pop)
 	}
-
+	
 	if pop := v.GetInt32("hello.pop"); pop != int32(45000) {
 		t.Fatalf("pop != 45000, = %d", pop)
 	}
-
+	
 	if pop := v.GetInt64("hello.largenum"); pop != int64(7654321001234567) {
 		t.Fatalf("int64 largenum != 7654321001234567, = %d", pop)
 	}
-
+	
 	if world := v.GetStringSlice("hello.world"); len(world) != 4 {
 		t.Fatalf("len(world) != 4, = %d", len(world))
 	}
-
+	
 	if universe := v.GetStringSlice("hello.universe"); len(universe) != 2 {
 		t.Fatalf("len(universe) != 2, = %d", len(universe))
 	}
-
+	
 	if ints := v.GetIntSlice("hello.ints"); len(ints) != 2 {
 		t.Fatalf("len(ints) != 2, = %d", len(ints))
 	}
-
+	
 	if fu := v.GetString("fu"); fu != "bar" {
 		t.Fatalf("fu != \"bar\", = %s", fu)
 	}
@@ -2012,15 +2012,15 @@ func TestMergeConfigOverrideType(t *testing.T) {
 	if err := v.ReadConfig(bytes.NewBuffer(jsonMergeExampleTgt)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if err := v.MergeConfig(bytes.NewBuffer(jsonMergeExampleSrc)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if pop := v.GetString("hello.pop"); pop != "pop str" {
 		t.Fatalf("pop != \"pop str\", = %s", pop)
 	}
-
+	
 	if foo := v.GetString("hello.foo"); foo != "foo str" {
 		t.Fatalf("foo != \"foo str\", = %s", foo)
 	}
@@ -2032,39 +2032,39 @@ func TestMergeConfigNoMerge(t *testing.T) {
 	if err := v.ReadConfig(bytes.NewBuffer(yamlMergeExampleTgt)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if pop := v.GetInt("hello.pop"); pop != 37890 {
 		t.Fatalf("pop != 37890, = %d", pop)
 	}
-
+	
 	if world := v.GetStringSlice("hello.world"); len(world) != 4 {
 		t.Fatalf("len(world) != 4, = %d", len(world))
 	}
-
+	
 	if fu := v.GetString("fu"); fu != "" {
 		t.Fatalf("fu != \"\", = %s", fu)
 	}
-
+	
 	if err := v.ReadConfig(bytes.NewBuffer(yamlMergeExampleSrc)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if pop := v.GetInt("hello.pop"); pop != 45000 {
 		t.Fatalf("pop != 45000, = %d", pop)
 	}
-
+	
 	if world := v.GetStringSlice("hello.world"); len(world) != 0 {
 		t.Fatalf("len(world) != 0, = %d", len(world))
 	}
-
+	
 	if universe := v.GetStringSlice("hello.universe"); len(universe) != 2 {
 		t.Fatalf("len(universe) != 2, = %d", len(universe))
 	}
-
+	
 	if ints := v.GetIntSlice("hello.ints"); len(ints) != 2 {
 		t.Fatalf("len(ints) != 2, = %d", len(ints))
 	}
-
+	
 	if fu := v.GetString("fu"); fu != "bar" {
 		t.Fatalf("fu != \"bar\", = %s", fu)
 	}
@@ -2076,21 +2076,21 @@ func TestMergeConfigMap(t *testing.T) {
 	if err := v.ReadConfig(bytes.NewBuffer(yamlMergeExampleTgt)); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	assert := func(i int) {
 		large := v.GetInt64("hello.largenum")
 		pop := v.GetInt("hello.pop")
 		if large != 765432101234567 {
 			t.Fatal("Got large num:", large)
 		}
-
+		
 		if pop != i {
 			t.Fatal("Got pop:", pop)
 		}
 	}
-
+	
 	assert(37890)
-
+	
 	update := map[string]interface{}{
 		"Hello": map[string]interface{}{
 			"Pop": 1234,
@@ -2099,15 +2099,15 @@ func TestMergeConfigMap(t *testing.T) {
 			"Rock": 345,
 		},
 	}
-
+	
 	if err := v.MergeConfigMap(update); err != nil {
 		t.Fatal(err)
 	}
-
+	
 	if rock := v.GetInt("world.rock"); rock != 345 {
 		t.Fatal("Got rock:", rock)
 	}
-
+	
 	assert(1234)
 }
 
@@ -2116,23 +2116,23 @@ func TestUnmarshalingWithAliases(t *testing.T) {
 	v.SetDefault("ID", 1)
 	v.Set("name", "Steve")
 	v.Set("lastname", "Owen")
-
+	
 	v.RegisterAlias("UserID", "ID")
 	v.RegisterAlias("Firstname", "name")
 	v.RegisterAlias("Surname", "lastname")
-
+	
 	type config struct {
 		ID        int
 		FirstName string
 		Surname   string
 	}
-
+	
 	var C config
 	err := v.Unmarshal(&C)
 	if err != nil {
 		t.Fatalf("unable to decode into struct, %v", err)
 	}
-
+	
 	assert.Equal(t, &config{ID: 1, FirstName: "Steve", Surname: "Owen"}, &C)
 }
 
@@ -2155,17 +2155,17 @@ clothing:
     size: large
 `
 	initConfig("yaml", config)
-
+	
 	assert.Equal(t, "steve", GetString("name"))
-
+	
 	polyester := "polyester"
 	SetDefault("clothing.shirt", polyester)
 	SetDefault("clothing.jacket.price", 100)
-
+	
 	assert.Equal(t, "leather", GetString("clothing.jacket"))
 	assert.Nil(t, Get("clothing.jacket.price"))
 	assert.Equal(t, polyester, GetString("clothing.shirt"))
-
+	
 	clothingSettings := AllSettings()["clothing"].(map[string]interface{})
 	assert.Equal(t, "leather", clothingSettings["jacket"])
 	assert.Equal(t, polyester, clothingSettings["shirt"])
@@ -2176,7 +2176,7 @@ func TestDotParameter(t *testing.T) {
 	// shoud take precedence over batters defined in jsonExample
 	r := bytes.NewReader([]byte(`{ "batters.batter": [ { "type": "Small" } ] }`))
 	unmarshalReader(r, v.config)
-
+	
 	actual := Get("batters.batter")
 	expected := []interface{}{map[string]interface{}{"type": "Small"}}
 	assert.Equal(t, expected, actual)
@@ -2236,7 +2236,7 @@ func TestCaseInsensitiveSet(t *testing.T) {
 			"cDE": "B",
 		},
 	}
-
+	
 	m2 := map[string]interface{}{
 		"Foo": 52,
 		"Bar": map[interface{}]interface{}{
@@ -2244,43 +2244,43 @@ func TestCaseInsensitiveSet(t *testing.T) {
 			"eFG": "B",
 		},
 	}
-
+	
 	Set("Given1", m1)
 	Set("Number1", 42)
-
+	
 	SetDefault("Given2", m2)
 	SetDefault("Number2", 52)
-
+	
 	// Verify SetDefault
 	if v := Get("number2"); v != 52 {
 		t.Fatalf("Expected 52 got %q", v)
 	}
-
+	
 	if v := Get("given2.foo"); v != 52 {
 		t.Fatalf("Expected 52 got %q", v)
 	}
-
+	
 	if v := Get("given2.bar.bcd"); v != "A" {
 		t.Fatalf("Expected A got %q", v)
 	}
-
+	
 	if _, ok := m2["Foo"]; !ok {
 		t.Fatal("Input map changed")
 	}
-
+	
 	// Verify Set
 	if v := Get("number1"); v != 42 {
 		t.Fatalf("Expected 42 got %q", v)
 	}
-
+	
 	if v := Get("given1.foo"); v != 32 {
 		t.Fatalf("Expected 32 got %q", v)
 	}
-
+	
 	if v := Get("given1.bar.abc"); v != "A" {
 		t.Fatalf("Expected A got %q", v)
 	}
-
+	
 	if _, ok := m1["Foo"]; !ok {
 		t.Fatal("Input map changed")
 	}
@@ -2290,26 +2290,26 @@ func TestParseNested(t *testing.T) {
 	type duration struct {
 		Delay time.Duration
 	}
-
+	
 	type item struct {
 		Name   string
 		Delay  time.Duration
 		Nested duration
 	}
-
+	
 	config := `[[parent]]
 	delay="100ms"
 	[parent.nested]
 	delay="200ms"
 `
 	initConfig("toml", config)
-
+	
 	var items []item
 	err := v.UnmarshalKey("parent", &items)
 	if err != nil {
 		t.Fatalf("unable to decode into struct, %v", err)
 	}
-
+	
 	assert.Equal(t, 1, len(items))
 	assert.Equal(t, 100*time.Millisecond, items[0].Delay)
 	assert.Equal(t, 200*time.Millisecond, items[0].Nested.Delay)
@@ -2378,7 +2378,7 @@ func TestWatchFile(t *testing.T) {
 		// TODO(bep) FIX ME
 		t.Skip("Skip test on Linux ...")
 	}
-
+	
 	t.Run("file content changed", func(t *testing.T) {
 		// given a `config.yaml` file being watched
 		v, configFile, cleanup := newViperWithConfigFile(t)
@@ -2403,7 +2403,7 @@ func TestWatchFile(t *testing.T) {
 		require.Nil(t, err)
 		assert.Equal(t, "baz", v.Get("foo"))
 	})
-
+	
 	t.Run("link to real file changed (à la Kubernetes)", func(t *testing.T) {
 		// skip if not executed on Linux
 		if runtime.GOOS != "linux" {
@@ -2438,16 +2438,16 @@ func TestWatchFile(t *testing.T) {
 func TestUnmarshal_DotSeparatorBackwardCompatibility(t *testing.T) {
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	flags.String("foo.bar", "cobra_flag", "")
-
+	
 	v := New()
 	assert.NoError(t, v.BindPFlags(flags))
-
+	
 	config := &struct {
 		Foo struct {
 			Bar string
 		}
 	}{}
-
+	
 	assert.NoError(t, v.Unmarshal(config))
 	assert.Equal(t, "cobra_flag", config.Foo.Bar)
 }
@@ -2476,10 +2476,10 @@ func TestKeyDelimiter(t *testing.T) {
 	v := NewWithOptions(KeyDelimiter("::"))
 	v.SetConfigType("yaml")
 	r := strings.NewReader(string(yamlExampleWithDot))
-
+	
 	err := v.unmarshalReader(r, v.config)
 	require.NoError(t, err)
-
+	
 	values := map[string]interface{}{
 		"image": map[string]interface{}{
 			"repository": "someImage",
@@ -2492,18 +2492,18 @@ func TestKeyDelimiter(t *testing.T) {
 			},
 		},
 	}
-
+	
 	v.SetDefault("charts::values", values)
-
+	
 	assert.Equal(t, "leather", v.GetString("clothing::jacket"))
 	assert.Equal(t, "01/02/03", v.GetString("emails::steve@hacker.com::created"))
-
+	
 	type config struct {
 		Charts struct {
 			Values map[string]interface{}
 		}
 	}
-
+	
 	expected := config{
 		Charts: struct {
 			Values map[string]interface{}
@@ -2511,11 +2511,11 @@ func TestKeyDelimiter(t *testing.T) {
 			Values: values,
 		},
 	}
-
+	
 	var actual config
-
+	
 	assert.NoError(t, v.Unmarshal(&actual))
-
+	
 	assert.Equal(t, expected, actual)
 }
 
@@ -2549,22 +2549,22 @@ var yamlDeepNestedSlices = []byte(`TV:
 func TestSliceIndexAccess(t *testing.T) {
 	v.SetConfigType("yaml")
 	r := strings.NewReader(string(yamlDeepNestedSlices))
-
+	
 	err := v.unmarshalReader(r, v.config)
 	require.NoError(t, err)
-
+	
 	assert.Equal(t, "The Expanse", v.GetString("tv.0.title"))
 	assert.Equal(t, "February 1, 2017", v.GetString("tv.0.seasons.1.first_released"))
 	assert.Equal(t, "Static", v.GetString("tv.0.seasons.1.episodes.2.title"))
 	assert.Equal(t, "December 15, 2015", v.GetString("tv.0.seasons.0.episodes.1.air_date"))
-
+	
 	// Test nested keys with capital letters
 	assert.Equal(t, "The Expanse", v.GetString("tv.0.title_i18n.USA"))
 	assert.Equal(t, "エクスパンス -巨獣めざめる-", v.GetString("tv.0.title_i18n.Japan"))
-
+	
 	// Test for index out of bounds
 	assert.Equal(t, "", v.GetString("tv.0.seasons.2.first_released"))
-
+	
 	// Accessing multidimensional arrays
 	assert.Equal(t, "Static", v.GetString("tv.0.episodes.1.2"))
 }
@@ -2573,7 +2573,7 @@ func BenchmarkGetBool(b *testing.B) {
 	key := "BenchmarkGetBool"
 	v = New()
 	v.Set(key, true)
-
+	
 	for i := 0; i < b.N; i++ {
 		if !v.GetBool(key) {
 			b.Fatal("GetBool returned false")
@@ -2585,7 +2585,7 @@ func BenchmarkGet(b *testing.B) {
 	key := "BenchmarkGet"
 	v = New()
 	v.Set(key, true)
-
+	
 	for i := 0; i < b.N; i++ {
 		if !v.Get(key).(bool) {
 			b.Fatal("Get returned false")
@@ -2598,7 +2598,7 @@ func BenchmarkGetBoolFromMap(b *testing.B) {
 	m := make(map[string]bool)
 	key := "BenchmarkGetBool"
 	m[key] = true
-
+	
 	for i := 0; i < b.N; i++ {
 		if !m[key] {
 			b.Fatal("Map value was false")

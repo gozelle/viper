@@ -10,10 +10,10 @@ import (
 	"bytes"
 	"io"
 	"os"
-
+	
 	crypt "github.com/sagikazarmark/crypt/config"
-
-	"github.com/spf13/viper"
+	
+	"github.com/gozelle/viper"
 )
 
 type remoteConfigProvider struct{}
@@ -39,7 +39,7 @@ func (rc remoteConfigProvider) Watch(rp viper.RemoteProvider) (io.Reader, error)
 	if err != nil {
 		return nil, err
 	}
-
+	
 	return bytes.NewReader(resp), nil
 }
 
@@ -67,14 +67,14 @@ func (rc remoteConfigProvider) WatchChannel(rp viper.RemoteProvider) (<-chan *vi
 			}
 		}
 	}(cryptoResponseCh, viperResponsCh, quitwc, quit)
-
+	
 	return viperResponsCh, quitwc
 }
 
 func getConfigManager(rp viper.RemoteProvider) (crypt.ConfigManager, error) {
 	var cm crypt.ConfigManager
 	var err error
-
+	
 	if rp.SecretKeyring() != "" {
 		var kr *os.File
 		kr, err = os.Open(rp.SecretKeyring())
